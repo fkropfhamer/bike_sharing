@@ -73,7 +73,7 @@ def _(plt, weekday_data):
 def _(mo):
     mo.md(r"""
     ##*Comment*:
-    The total rent amounts in two years 2011 and 2012 do not showcase big variation among the weekdays. Friday and Saturday are slightly busier days.
+    The mean daily rent amounts in two years 2011 and 2012 do not showcase big variation among the weekdays. Friday and Saturday are slightly busier days.
     """)
     return
 
@@ -165,7 +165,7 @@ def _(FixedLocator, plt, yr_data):
 def _(mo):
     mo.md(r"""
     ##*Comment*:
-    The total rent amounts in 2012 clearly exceed that of year 2011. This indicates that Bike-Sharing was gaining more popularity.
+    The mean daily rent amounts in 2012 clearly exceed that of year 2011. This indicates that Bike-Sharing was gaining more popularity.
     """)
     return
 
