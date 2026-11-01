@@ -1,3 +1,8 @@
+
+## Development
+
+```uv run marimo edit```
+
 ## Acknowledgements & Citation
 
 The dataset used in this project is sourced from the UCI Machine Learning Repository:
