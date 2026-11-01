@@ -1,7 +1,11 @@
+# Bike sharing data analysis
+a university data analysis project
 
 ## Development
-
-```uv run marimo edit```
+- install [uv](https://docs.astral.sh/uv/getting-started/installation/)
+- clone repo
+- run ```uv --sync```
+- run ```uv run marimo edit``` and open the link upcoming link in the browser
 
 ## Acknowledgements & Citation
 
