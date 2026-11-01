@@ -29,7 +29,7 @@ def _():
     from matplotlib.ticker import FixedLocator
     import pandas as pd
 
-    return FixedLocator, pd, plt
+    return pd, plt
 
 
 @app.cell
@@ -41,10 +41,12 @@ def _(pd):
     data_hr = pd.read_csv("hour.csv")
 
     weekday_data = data_day.groupby(data_day["weekday"])["cnt"].agg(mean="mean", median="median", n="count").reset_index()
-    mnth_data = data_day.groupby(data_day["mnth"])["cnt"].agg(mean="mean", median="median", n="count").reset_index()
-    yr_data = data_day.groupby(data_day["yr"])["cnt"].agg(mean="mean", median="median", n="count").reset_index()
-    hr_data = data_hr.groupby(data_hr["hr"])["cnt"].agg(mean="mean", median="median", n="count").reset_index()
-    return hr_data, mnth_data, weekday_data, yr_data
+    mnth_data = data_day.groupby("mnth")["cnt"].agg(mean="mean", median="median", n="count").reset_index()
+    mnth_data_2011 = data_day[data_day["yr"]==0].groupby("mnth")["cnt"].agg(mean="mean", median="median", n="count").reset_index()
+    mnth_data_2012 = data_day[data_day["yr"]==1].groupby("mnth")["cnt"].agg(mean="mean", median="median", n="count").reset_index()
+    yr_data = data_day.groupby("yr")["cnt"].agg(mean="mean", median="median", n="count").reset_index()
+    hr_data = data_hr.groupby("hr")["cnt"].agg(mean="mean", median="median", n="count").reset_index()
+    return data_day, hr_data, mnth_data, mnth_data_2011, mnth_data_2012
 
 
 @app.cell(hide_code=True)
@@ -56,13 +58,35 @@ def _(mo):
 
 
 @app.cell
-def _(plt, weekday_data):
+def _(data_day, plt):
     fig_weekday, ax_weekday = plt.subplots(figsize=(8,6))
     ax_weekday.spines[['right', 'top']].set_visible(False)
-    plt.bar(weekday_data["weekday"], weekday_data["mean"])
+    plt.boxplot([data_day[data_day["weekday"] == _]["cnt"] for _ in range(7)],
+                tick_labels = ["Sun","Mon", "Tue", "Wed", "Thu", "Fri", "Sat"], #0-6 corresponds to Sunday to Saturday
+                patch_artist = True,
+                showmeans = True,
+                meanprops = {
+                    "marker": "D",
+                    "markerfacecolor": "#d95f02",
+                    "markeredgecolor": "white",
+                    "markersize": 7,
+                },
+                medianprops = {"color": "#1f2937", "linewidth": 2},
+                boxprops = {"facecolor": "#dbeafe", "edgecolor": "#4b78a8"},
+                whiskerprops = {"color": "#64748b"},
+                capprops = {"color": "#64748b"},
+                flierprops={
+                    "marker": "o",
+                    "markerfacecolor": "#94a3b8",
+                    "markeredgecolor": "none",
+                    "markersize": 4,
+                    "alpha": 0.6,
+                }
+               )
+
     plt.xlabel("Weekdays")
-    plt.ylabel("Mean daily rental counts")
-    plt.title("Mean daily rental counts in weekdays", fontsize = 15)
+    plt.ylabel("Daily rental counts")
+    plt.title("Daily rental counts in weekdays", fontsize = 15)
     ax_weekday.set_axisbelow(True) # Ensures grid lines are drawn below other elements
     ax_weekday.grid(color='gray', linestyle='--', linewidth=0.5)
     plt.show()
@@ -87,16 +111,35 @@ def _(mo):
 
 
 @app.cell
-def _(mnth_data, plt):
+def _(mnth_data_2011, mnth_data_2012, plt):
     fig_mnth, ax_mnth = plt.subplots(figsize=(8,6))
     ax_mnth.spines[['right', 'top']].set_visible(False)
-    plt.bar(mnth_data["mnth"], mnth_data["mean"])
+    month_name = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+    plt.plot(month_name, mnth_data_2011["mean"], linestyle = "--", marker = "o", label = "Year 2011")
+    plt.plot(month_name, mnth_data_2012["mean"], linestyle = "--", marker = "o", color = "#d95f02", label = "Year 2012")
     plt.xlabel("Months")
     plt.ylabel("Mean daily rental counts")
-    plt.title("Mean daily rental counts in months", fontsize = 15)
+    plt.title("Mean daily rental counts among months in years 2011 and 2012", fontsize = 15)
+    plt.legend()
     ax_mnth.set_axisbelow(True) # Ensures grid lines are drawn below other elements
     ax_mnth.grid(color='gray', linestyle='--', linewidth=0.5)
     plt.show()
+    return (month_name,)
+
+
+@app.cell
+def _():
+    """
+    fig_mnth_2012, ax_mnth_2012 = plt.subplots(figsize=(8,6))
+    ax_mnth_2012.spines[['right', 'top']].set_visible(False)
+    plt.bar(mnth_data_2012["mnth"], mnth_data_2012["mean"])
+    plt.xlabel("Months")
+    plt.ylabel("Mean daily rental counts")
+    plt.title("Mean daily rental counts in months in 2012", fontsize = 15)
+    ax_mnth_2012.set_axisbelow(True) # Ensures grid lines are drawn below other elements
+    ax_mnth_2012.grid(color='gray', linestyle='--', linewidth=0.5)
+    plt.show()
+    """
     return
 
 
@@ -109,7 +152,7 @@ def _(mo):
 
 
 @app.cell
-def _(mnth_data, plt):
+def _(mnth_data, month_name, plt):
     highlight_colour_mnth = '#d95f02'
     non_highlight_colour_mnth = '#768493'
     cut_off_mnth = 5000
@@ -119,7 +162,7 @@ def _(mnth_data, plt):
     fig_mnth_2, ax_mnth_2 = plt.subplots(figsize=(8,6))
     ax_mnth_2.spines[['right', 'top']].set_visible(False)
 
-    plt.bar(mnth_data_copy["mnth"], mnth_data_copy["mean"], color = mnth_data_copy["colours"])
+    plt.bar(month_name, mnth_data_copy["mean"], color = mnth_data_copy["colours"])
     plt.xlabel("Months")
     plt.ylabel("Mean daily rental counts")
     plt.title("Mean daily rental counts in months", fontsize = 15)
@@ -147,14 +190,34 @@ def _(mo):
 
 
 @app.cell
-def _(FixedLocator, plt, yr_data):
+def _(data_day, plt):
     fig_yr, ax_yr = plt.subplots(figsize=(8,6))
     ax_yr.spines[['right', 'top']].set_visible(False)
-    plt.bar(yr_data["yr"]+2011, yr_data["mean"])
-    plt.gca().xaxis.set_major_locator(FixedLocator([2011,2012])) # Define fixed point on x-axis
+    plt.boxplot([data_day[data_day["yr"] == _]["cnt"] for _ in range(2)],
+                tick_labels = ["2011", "2012"],
+                patch_artist = True,
+                showmeans = True,
+                meanprops = {
+                    "marker": "D",
+                    "markerfacecolor": "#d95f02",
+                    "markeredgecolor": "white",
+                    "markersize": 7,
+                },
+                medianprops = {"color": "#1f2937", "linewidth": 2},
+                boxprops = {"facecolor": "#dbeafe", "edgecolor": "#4b78a8"},
+                whiskerprops = {"color": "#64748b"},
+                capprops = {"color": "#64748b"},
+                flierprops={
+                    "marker": "o",
+                    "markerfacecolor": "#94a3b8",
+                    "markeredgecolor": "none",
+                    "markersize": 4,
+                    "alpha": 0.6,
+                }
+               )
     plt.xlabel("Years")
-    plt.ylabel("Mean daily rental counts")
-    plt.title("Mean daily rental counts in years", fontsize = 15)
+    plt.ylabel("Daily rental counts")
+    plt.title("Daily rental counts in years", fontsize = 15)
     ax_yr.set_axisbelow(True) # Ensures grid lines are drawn below other elements
     ax_yr.grid(color='gray', linestyle='--', linewidth=0.5)
     plt.show()
@@ -183,7 +246,7 @@ def _(hr_data, plt):
     fig_hr, ax_hr = plt.subplots(figsize=(8,6))
     ax_hr.spines[['right', 'top']].set_visible(False)
 
-    plt.bar(hr_data["hr"], hr_data["mean"])
+    plt.plot(hr_data["hr"], hr_data["mean"], linestyle = "--", marker = "o")
     plt.xlabel("Hours")
     plt.ylabel("Mean hourly rental counts")
     plt.title("Mean hourly rental counts", fontsize = 15)
@@ -227,8 +290,8 @@ def _(hr_data, plt):
     ax_hr_2.text(x=cut_off_hr, y=1, s='300 rented bikes', ha='center', 
             fontsize=14, bbox=dict(facecolor='white', edgecolor='grey', ls='--'))
 
-    # ax_hr_2.set_axisbelow(True) # Ensures grid lines are drawn below other elements
-    # ax_hr_2.grid(color='gray', linestyle='--', linewidth=0.5)
+    ax_hr_2.set_axisbelow(True) # Ensures grid lines are drawn below other elements
+    ax_hr_2.grid(color='gray', linestyle='--', linewidth=0.2)
 
     plt.title("Mean hourly rental counts", fontsize = 15)
     plt.show()
@@ -241,11 +304,6 @@ def _(mo):
     ##*Comment*:
     The mean hourly rent amounts in the two years 2011 and 2012 for hourly periods between 8 AM and 9 AM and between 4 PM and 8 PM exceed 300. A possible explanation is that these are common commute hours, which entail bigger numbers of rented bikes.
     """)
-    return
-
-
-@app.cell
-def _():
     return
 
 
