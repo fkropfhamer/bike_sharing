@@ -1,3 +1,12 @@
+# Bike sharing data analysis
+a university data analysis project
+
+## Development
+- install [uv](https://docs.astral.sh/uv/getting-started/installation/)
+- clone repo
+- run ```uv --sync```
+- run ```uv run marimo edit``` and open the link upcoming link in the browser
+
 ## Acknowledgements & Citation
 
 The dataset used in this project is sourced from the UCI Machine Learning Repository:
