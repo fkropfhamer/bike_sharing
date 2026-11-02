@@ -22,7 +22,7 @@ def _():
     return mo, pd, plt
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(pd):
     day_df = pd.read_csv("day.csv")
     day_df.head(350)
@@ -31,7 +31,7 @@ def _(pd):
     return (day_df,)
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(pd):
     hour_df = pd.read_csv("hour.csv")
     hour_df.head(3500)
@@ -49,62 +49,6 @@ def _(hour_df, pd):
     hourly_stats = hour_df["cnt"].describe()
 
     hourly_stats
-    return
-
-
-@app.cell
-def _(hour_df):
-    # Aggregate hourly data up to daily totals to answer Q3
-
-    daily_from_hour = (
-
-        hour_df.groupby("dteday")
-
-        .agg({
-
-            "cnt": "sum",
-
-            "casual": "sum",
-
-            "registered": "sum",
-
-            "temp": "mean",
-
-            "hum": "mean",
-
-            "windspeed": "mean",
-
-            "weathersit": "max"
-
-        })
-
-        .reset_index()
-
-    )
-
-
-    # Sort chronologically
-
-    daily_from_hour = daily_from_hour.sort_values("dteday").reset_index(drop=True)
-
-
-    # Calculate 21-day rolling median and IQR for anomaly detection
-
-    daily_from_hour["rolling_med"] = daily_from_hour["cnt"].rolling(window=21, center=True, min_periods=7).median()
-
-    daily_from_hour["rolling_q25"] = daily_from_hour["cnt"].rolling(window=21, center=True, min_periods=7).quantile(0.25)
-
-    daily_from_hour["rolling_q75"] = daily_from_hour["cnt"].rolling(window=21, center=True, min_periods=7).quantile(0.75)
-
-
-
-    # Statistical Summary via .describe()
-
-    q3_summary = daily_from_hour["cnt"].describe()
-
-
-
-    q3_summary
     return
 
 
@@ -127,7 +71,15 @@ def _(mo):
     return
 
 
-@app.cell
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    By removing the raw numerical text and transitioning to a continuous Yellow-Green-Blue (YlGnBu) color palette, this day-of-the-month heatmap leverages the human eye's natural ability to instantly process intensity over reading numbers. The Y-axis maps the macro-level progression of the months, while the X-axis captures the granular daily rhythm from the 1st to the 31st. Lighter yellow tiles immediately flag unusually quiet days—exposing severe winter months or sudden mid-month weather disruptions—while deep blue tiles visually cluster to reveal the massive seasonal ridership wave during the summer and early fall. This minimalist design strips away cognitive clutter, allowing reviewers to intuitively spot structural calendar gaps (like the end of February) and specific anomalous dates, all while using the interactive toggle to see how these exact behavioral patterns scaled up between 2011 and 2012.
+    """)
+    return
+
+
+@app.cell(hide_code=True)
 def _(mo):
     year_selector = mo.ui.dropdown(
         options={
@@ -144,120 +96,115 @@ def _(mo):
     return (year_selector,)
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(day_df, mo, pd, plt, year_selector):
-    MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
-              "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+    MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+              "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
-    # Filter by year (None means keep both years)
-    year = year_selector.value
-    data = day_df if year is None else day_df[day_df["yr"] == year]
+    # Filter by year (None means keep both years)
+    year = year_selector.value
+    data = day_df if year is None else day_df[day_df["yr"] == year]
 
-    # Average rentals for every (month, day-of-month) pair -> 12 x 31 grid
-    day_of_month = pd.to_datetime(data["dteday"]).dt.day
-    avg_rentals = (
-        data.groupby(["mnth", day_of_month])["cnt"].mean()
-            .unstack()
-            .reindex(index=range(1, 13), columns=range(1, 32))
-    )
+    # Average rentals for every (month, day-of-month) pair -> 12 x 31 grid
+    day_of_month = pd.to_datetime(data["dteday"]).dt.day
+    avg_rentals = (
+        data.groupby(["mnth", day_of_month])["cnt"].mean()
+            .unstack()
+            .reindex(index=range(1, 13), columns=range(1, 32))
+    )
 
-    # Dates that don't exist (Feb 30, Apr 31...) show as light grey, not blank
-    cmap = plt.get_cmap("YlGnBu").copy()
-    cmap.set_bad("#eeeeee")
+    # Dates that don't exist (Feb 30, Apr 31...) show as light grey, not blank
+    cmap = plt.get_cmap("YlGnBu").copy()
+    cmap.set_bad("#eeeeee")
 
-    fig, ax = plt.subplots(figsize=(15, 5.5))
-    image = ax.imshow(avg_rentals, cmap=cmap, aspect="auto")
+    fig, ax = plt.subplots(figsize=(15, 5.5))
+    image = ax.imshow(avg_rentals, cmap=cmap, aspect="auto")
 
-    ax.set_xticks(range(31), labels=range(1, 32))
-    ax.set_yticks(range(12), labels=MONTHS)
-    ax.set_title("Average Daily Rentals by Month and Day", fontweight="bold", pad=15)
-    ax.spines[:].set_visible(False)
+    ax.set_xticks(range(31), labels=range(1, 32))
+    ax.set_yticks(range(12), labels=MONTHS)
+    ax.set_title("Average Daily Rentals by Month and Day", fontweight="bold", pad=15)
+    ax.spines[:].set_visible(False)
 
-    # Thin white lines between cells give it a calendar look
-    ax.set_xticks([x - 0.5 for x in range(32)], minor=True)
-    ax.set_yticks([y - 0.5 for y in range(13)], minor=True)
-    ax.grid(which="minor", color="white", linewidth=1)
-    ax.tick_params(which="both", length=0)
+    # Thin white lines between cells give it a calendar look
+    ax.set_xticks([x - 0.5 for x in range(32)], minor=True)
+    ax.set_yticks([y - 0.5 for y in range(13)], minor=True)
+    ax.grid(which="minor", color="white", linewidth=1)
+    ax.tick_params(which="both", length=0)
 
-    fig.colorbar(image, ax=ax, pad=0.02, label="Average Daily Rentals")
-    plt.close(fig)  # prevents the figure from rendering twice
+    fig.colorbar(image, ax=ax, pad=0.02, label="Average Daily Rentals")
+    plt.close(fig)  # prevents the figure from rendering twice
 
-    mo.vstack([
-        mo.md("### 📅 Calendar Heatmap (Day of the Month)\n"
-              "The color gradient makes seasonal waves and sudden drops easy to spot at a glance."),
-        year_selector,
-        fig,
+    mo.vstack([
+        mo.md("### Calendar Heatmap (Day of the Month)\n"
+              "The color gradient makes seasonal waves and sudden drops easy to spot at a glance."),
+        year_selector,
+        fig,
     ])
     return
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(mo):
-    # 1. Added 'weekday' to our interactive dropdown!
     group_dropdown = mo.ui.dropdown(
         options={
             "By Month": "mnth",
             "By Season": "season",
-            "By Weather Situation": "weathersit",
-            "By Day of the Week (0=Sun, 6=Sat)": "weekday",
-            "By Working Day (0=Off, 1=Workday)": "workingday"
+            "By Day of the Week": "weekday",
         },
-        value="By Day of the Week (0=Sun, 6=Sat)",
-        label="Group Boxplots By:"
-    )
+        value="By Day of the Week",
+        label="Group boxplots by:",
+    )
+    group_dropdown
     return (group_dropdown,)
 
 
 @app.cell(hide_code=True)
 def _(day_df, group_dropdown, mo, plt):
-    # 1. Get the selected column (made private with _)
-    _col = group_dropdown.value
+    _LMU_GREEN = "#00883A"   # official LMU green
+    _DARK_GREY = "#333333"
 
-    # 2. Create the canvas
-    _fig, _ax = plt.subplots(figsize=(9.5, 4.8))
+    # Tick labels for each grouping option
+    _LABELS = {
+        "mnth": ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                 "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+        "season": ["Winter", "Spring", "Summer", "Fall"],
+        "weekday": ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],  # dataset: 0 = Sunday
+    }
 
-    # 3. Extract data groups 
-    _groups = sorted(day_df[_col].unique())
-    _data_to_plot = [day_df[day_df[_col] == g]["cnt"].dropna().values for g in _groups]
+    _column = group_dropdown.value
+    _rentals_by_group = [
+        _group["cnt"].dropna().values
+        for _, _group in day_df.groupby(_column)   # groups come out sorted
+    ]
 
-    # 4. Draw Vertical Boxplots
-    _ax.boxplot(
-        _data_to_plot, 
-        vert=True, 
-        patch_artist=True,
-        boxprops=dict(facecolor="#0072B2", alpha=0.75, edgecolor="#222222"),
-        medianprops=dict(color="#111111", linewidth=2),
-        flierprops=dict(marker="o", markerfacecolor="#D55E00", markersize=5, alpha=0.7, markeredgecolor="#222222")
-    )
+    _fig, _ax = plt.subplots(figsize=(9.5, 4.8))
+    _ax.boxplot(
+        _rentals_by_group,
+        patch_artist=True,
+        boxprops=dict(facecolor=_LMU_GREEN, alpha=0.75, edgecolor=_DARK_GREY),
+        medianprops=dict(color="black", linewidth=2),
+        whiskerprops=dict(color=_DARK_GREY),
+        capprops=dict(color=_DARK_GREY),
+        flierprops=dict(marker="D", markersize=5, markerfacecolor=_DARK_GREY,
+                        markeredgecolor="white", alpha=0.8),
+    )
 
-    # 5. Apply dynamic labels based on what the user picked
-    _ax.set_xticks(range(1, len(_groups) + 1))
+    _ax.set_xticks(range(1, len(_rentals_by_group) + 1), labels=_LABELS[_column])
+    _ax.set_ylabel("Daily Total Bike Rentals")
+    _ax.set_title(
+        f"Rental Variability & Outliers {group_dropdown.selected_key.lower()}",
+        fontweight="bold", pad=12,
+    )
+    _ax.spines[["top", "right"]].set_visible(False)
+    _ax.grid(axis="y", linestyle="--", alpha=0.4)
+    plt.close(_fig)  # prevents the figure from rendering twice
 
-    if _col == "mnth":
-        _labels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-    elif _col == "season":
-        _labels = ["1: Winter", "2: Spring", "3: Summer", "4: Fall"]
-    elif _col == "weathersit":
-        _labels = ["1: Clear / Few Clouds", "2: Mist / Cloudy", "3: Light Snow / Rain"]
-    elif _col == "weekday":
-        _labels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
-    else:
-        _labels = ["0: Weekend / Holiday", "1: Working Day"]
-    
-    _ax.set_xticklabels(_labels, fontsize=10)
-
-    # 6. Clean formatting
-    _ax.set_ylabel("Daily Total Bike Rentals", fontsize=11)
-    _ax.set_title(f"Conditional Variability & Outliers ({group_dropdown.value.replace('By ', 'by ')})", fontweight="bold", pad=12)
-    _ax.spines["top"].set_visible(False)
-    _ax.spines["right"].set_visible(False)
-    _ax.grid(axis="y", linestyle="--", alpha=0.4)
-
-    # 7. Output to browser
-    mo.vstack([
-        mo.md("### Interactive Conditional Boxplots\nUse the dropdown to isolate variability. The orange dots represent mathematically unusual days ($> 1.5 \\times \\text{IQR}$)."),
-        group_dropdown,
-        mo.ui.matplotlib(_ax)
+    mo.vstack([
+        mo.md("### Interactive Conditional Boxplots\n"
+              "Use the dropdown to compare how rentals vary across groups. "
+              "The dark diamonds are unusual days (beyond 1.5 × IQR from the box)."),
+        group_dropdown,
+        _fig,
     ])
     return
 
