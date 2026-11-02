@@ -57,6 +57,8 @@ def _(data_day, data_hour):
         .agg(["mean", "median", "count", "sum"])
         .reset_index()
     )
+
+
     return hour_data, month_data, weathersit_data, weekday_data, year_data
 
 
@@ -83,8 +85,24 @@ def _(casual_color, month_data, plt, registered_color):
 
     _ax.set_ylabel('Mean')
     _ax.set_title('Mean monthly usage by user group')
-    _ax.legend(loc='upper left', ncols=3)
 
+    plt.show()
+    return
+
+
+@app.cell
+def _(casual_color, month_data, plt, registered_color):
+    fig_mnth, ax_mnth = plt.subplots(figsize=(8,6))
+    ax_mnth.spines[['right', 'top']].set_visible(False)
+    month_name = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+    plt.plot(month_name, month_data[('registered', 'mean')], linestyle = "--", marker = "o", color = registered_color, label = "registered")
+    plt.plot(month_name, month_data[('casual', 'mean')], linestyle = "--", marker = "o", color = casual_color, label = "casual")
+    plt.xlabel("Months")
+    plt.ylabel("Mean daily rental counts")
+    plt.title("Mean daily rental counts among months between casual and registered users", fontsize = 15)
+    plt.legend()
+    ax_mnth.set_axisbelow(True) # Ensures grid lines are drawn below other elements
+    ax_mnth.grid(color='gray', linestyle='--', linewidth=0.5)
     plt.show()
     return
 
@@ -99,13 +117,12 @@ def _(casual_color, plt, registered_color, weekday_data):
 
     _fig, _ax = plt.subplots()
 
-    _res = _ax.grouped_bar(user_means, tick_labels=range(0,7), group_spacing=1, colors=[registered_color, casual_color])
-    for _container in _res.bar_containers:
-        _ax.bar_label(_container, padding=3)
+    _res = _ax.grouped_bar(user_means, tick_labels = ["Sun","Mon", "Tue", "Wed", "Thu", "Fri", "Sat"], group_spacing=1, colors=[registered_color, casual_color])
+    # for _container in _res.bar_containers:
+    #     _ax.bar_label(_container, padding=3)
 
     _ax.set_ylabel('Mean')
     _ax.set_title('Mean weekday usage by user group')
-    _ax.legend(loc='upper left', ncols=3)
 
     plt.show()
     return
@@ -122,13 +139,30 @@ def _(casual_color, hour_data, plt, registered_color):
     _fig, _ax = plt.subplots()
 
     _res = _ax.grouped_bar(hour_user_means, tick_labels=range(0,24), group_spacing=1, colors=[registered_color, casual_color])
-    for _container in _res.bar_containers:
-        _ax.bar_label(_container, padding=3)
+    # for _container in _res.bar_containers:
+    #     _ax.bar_label(_container, padding=3)
 
     _ax.set_ylabel('Mean')
     _ax.set_title('Mean hourly usage by user group')
-    _ax.legend(loc='upper left', ncols=3)
+    _ax.legend()
 
+    plt.show()
+    return
+
+
+@app.cell
+def _(hour_data, plt):
+    fig_hr, ax_hr = plt.subplots(figsize=(8,6))
+    ax_hr.spines[['right', 'top']].set_visible(False)
+
+    plt.plot(range(0, 24), hour_data[('registered', 'mean')], linestyle = "--", marker = "o", label = 'registered')
+    plt.plot(range(0, 24), hour_data[('casual', 'mean')], linestyle = "--", marker = "o", label = 'casual')
+    plt.xlabel("Hours")
+    plt.ylabel("Mean hourly rental counts")
+    plt.title("Mean hourly rental counts", fontsize = 15)
+    ax_hr.set_axisbelow(True)
+    ax_hr.grid(color='gray', linestyle='--', linewidth=0.5)
+    plt.legend()
     plt.show()
     return
 
@@ -177,6 +211,111 @@ def _(casual_color, plt, registered_color, year_data):
     _ax.set_title("Group percentage per year")
     _ax.legend()
 
+    plt.show()
+    return
+
+
+@app.cell
+def _(casual_color, data_day, plt, registered_color):
+    workingday_data = (
+        data_day
+        .groupby("workingday")[["casual", "registered"]]
+        .agg(["mean"])
+        .reset_index()
+    )
+
+    print(workingday_data)
+
+    data_g1_subA = data_day[data_day["workingday"]  == 1]["registered"]
+    data_g1_subB = data_day[data_day["workingday"]  == 1]["casual"]
+    data_g2_subA = data_day[data_day["workingday"]  == 0]["registered"]
+    data_g2_subB = data_day[data_day["workingday"]  == 0]["casual"]
+
+    fig, ax = plt.subplots(figsize=(8, 5))
+
+    pos_subA = [1, 4]
+    pos_subB = [2, 5]
+
+    bp1 = ax.boxplot(
+        [
+            data_g1_subB, data_g2_subB
+        ],
+        positions=pos_subA,
+        widths=0.6,
+        patch_artist=True,
+        boxprops=dict(facecolor=casual_color),
+    )
+
+    bp2 = ax.boxplot(
+        [
+                    data_g1_subA, data_g2_subA
+        ], 
+        positions=pos_subB,
+        widths=0.6,
+        patch_artist=True,
+        boxprops=dict(facecolor=registered_color),
+    )
+
+    ax.set_xticks([1.5, 4.5])
+    ax.set_xticklabels(["Workingday", "Non workingday"])
+
+    ax.legend([bp1["boxes"][0], bp2["boxes"][0]], ["casual", "registered"])
+
+    ax.set_title("Grouped Boxplot in Matplotlib")
+    plt.show()
+    return (
+        data_g1_subA,
+        data_g1_subB,
+        data_g2_subA,
+        data_g2_subB,
+        pos_subA,
+        pos_subB,
+    )
+
+
+@app.cell
+def _(
+    casual_color,
+    data_g1_subA,
+    data_g1_subB,
+    data_g2_subA,
+    data_g2_subB,
+    plt,
+    pos_subA,
+    pos_subB,
+    registered_color,
+):
+    _fig, _ax = plt.subplots(figsize=(8, 5))
+
+    _pos_subA = [1, 2]
+    _pos_subB = [4, 5]
+
+    _bp1 = _ax.boxplot(
+        [
+            data_g1_subB, data_g1_subA
+        ],
+        positions=pos_subA,
+        widths=0.6,
+        patch_artist=True,
+        boxprops=dict(facecolor=casual_color),
+    )
+
+    _bp2 = _ax.boxplot(
+        [
+                    data_g2_subB, data_g2_subA
+        ], 
+        positions=pos_subB,
+        widths=0.6,
+        patch_artist=True,
+        boxprops=dict(facecolor=registered_color),
+    )
+
+    _ax.set_xticks([1.5, 4.5])
+    _ax.set_xticklabels(["casual", "registered"])
+
+    _ax.legend([_bp1["boxes"][0], _bp2["boxes"][0]], ["workingday", "non workingday"])
+
+    _ax.set_title("Grouped Boxplot in Matplotlib")
     plt.show()
     return
 
