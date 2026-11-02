@@ -146,50 +146,48 @@ def _(mo):
 
 @app.cell
 def _(day_df, mo, pd, plt, year_selector):
-    # 1. Copy data and extract exact day of the month (1-31)
-    _df = day_df.copy()
-    _df["day_of_month"] = pd.to_datetime(_df["dteday"]).dt.day
+    MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+              "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
-    # 2. Filter by the selected year 
-    _selected_year = year_selector.value
-    _data = _df if _selected_year is None else _df[_df["yr"] == _selected_year]
+    # Filter by year (None means keep both years)
+    year = year_selector.value
+    data = day_df if year is None else day_df[day_df["yr"] == year]
 
-    _MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-    _DAYS = list(range(1, 32))  # 1 through 31
-
-    # 3. Pivot: Months down the side (index), Days across the top (columns)
-    _avg_rentals = (
-        _data.pivot_table(index="mnth", columns="day_of_month", values="cnt", aggfunc="mean")
-             .reindex(index=range(1, 13), columns=_DAYS)   # 12x31 grid
+    # Average rentals for every (month, day-of-month) pair -> 12 x 31 grid
+    day_of_month = pd.to_datetime(data["dteday"]).dt.day
+    avg_rentals = (
+        data.groupby(["mnth", day_of_month])["cnt"].mean()
+            .unstack()
+            .reindex(index=range(1, 13), columns=range(1, 32))
     )
 
-    # 4. Make the figure wide, panoramic, and slightly more compact vertically
-    _fig, _ax = plt.subplots(figsize=(15, 5.5))
-
-    _image = _ax.imshow(_avg_rentals, cmap="YlGnBu", aspect="auto")
+    # Dates that don't exist (Feb 30, Apr 31...) show as light grey, not blank
+    cmap = plt.get_cmap("YlGnBu").copy()
+    cmap.set_bad("#eeeeee")
 
-    # Set axes: X is now 31 days, Y is now 12 months
-    _ax.set_xticks(range(31), labels=[str(d) for d in _DAYS])
-    _ax.set_yticks(range(12), labels=_MONTHS)
-    _ax.set_title("Average Daily Rentals by Month and Day", fontweight="bold", pad=15)
-
-    # Clean up the chart by hiding the heavy outer borders
-    for spine in _ax.spines.values():
-        spine.set_visible(False)
-    
-    # Keep the colorbar cleanly attached so the audience can map colors to actual numbers
-    _cbar = _fig.colorbar(_image, ax=_ax, pad=0.02)
-    _cbar.set_label("Average Daily Rentals", rotation=270, labelpad=15)
+    fig, ax = plt.subplots(figsize=(15, 5.5))
+    image = ax.imshow(avg_rentals, cmap=cmap, aspect="auto")
 
-    # 5. Build the output block
-    _output = mo.vstack([
-        mo.md("### 📅 Calendar Heatmap (Day of the Month)\nRelying on the color gradient rather than raw numbers allows for instant, intuitive scanning of seasonal waves and sudden drops."),
+    ax.set_xticks(range(31), labels=range(1, 32))
+    ax.set_yticks(range(12), labels=MONTHS)
+    ax.set_title("Average Daily Rentals by Month and Day", fontweight="bold", pad=15)
+    ax.spines[:].set_visible(False)
+
+    # Thin white lines between cells give it a calendar look
+    ax.set_xticks([x - 0.5 for x in range(32)], minor=True)
+    ax.set_yticks([y - 0.5 for y in range(13)], minor=True)
+    ax.grid(which="minor", color="white", linewidth=1)
+    ax.tick_params(which="both", length=0)
+
+    fig.colorbar(image, ax=ax, pad=0.02, label="Average Daily Rentals")
+    plt.close(fig)  # prevents the figure from rendering twice
+
+    mo.vstack([
+        mo.md("### 📅 Calendar Heatmap (Day of the Month)\n"
+              "The color gradient makes seasonal waves and sudden drops easy to spot at a glance."),
         year_selector,
-        _fig
-    ])
-
-    # Render to the browser
-    _output
+        fig,
+    ])
     return
 
 
