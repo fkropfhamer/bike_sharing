@@ -81,17 +81,28 @@ def _(mo):
 
 @app.cell(hide_code=True)
 def _(mo):
-    year_selector = mo.ui.dropdown(
-        options={
-            "Both Years (2011 & 2012)": None,   
-            "2011 Only": 0,
-            "2012 Only": 1,
-        },
-        value="Both Years (2011 & 2012)",
-        label="Select year:"
-    )
-
-    # Standalone line so marimo displays it
+    year_selector = mo.ui.dropdown(
+
+        options={
+
+            "Both Years (2011 & 2012)": None,   
+
+            "2011 Only": 0,
+
+            "2012 Only": 1,
+
+        },
+
+        value="Both Years (2011 & 2012)",
+
+        label="Select year:"
+
+    )
+
+
+
+    # Standalone line so marimo displays it
+
     year_selector
     return (year_selector,)
 
@@ -145,23 +156,128 @@ def _(day_df, mo, pd, plt, year_selector):
 
 @app.cell(hide_code=True)
 def _(mo):
-    group_dropdown = mo.ui.dropdown(
-        options={
-            "By Month": "mnth",
-            "By Season": "season",
-            "By Day of the Week": "weekday",
-        },
-        value="By Day of the Week",
-        label="Group boxplots by:",
-    )
+    group_dropdown = mo.ui.dropdown(
+
+        options={
+
+            "By Month": "mnth",
+
+            "By Season": "season",
+
+            "By Day of the Week": "weekday",
+
+        },
+
+        value="By Day of the Week",
+
+        label="Group boxplots by:",
+
+    )
+
     group_dropdown
     return (group_dropdown,)
 
 
 @app.cell(hide_code=True)
 def _(day_df, group_dropdown, mo, plt):
-    _LMU_GREEN = "#00883A"   # official LMU green
-    _DARK_GREY = "#333333"
+    _LMU_GREEN = "#00883A"   # official LMU green
+
+    _DARK_GREY = "#333333"
+
+
+    # Tick labels for each grouping option
+
+    _LABELS = {
+
+        "mnth": ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+
+                 "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+
+        "season": ["Winter", "Spring", "Summer", "Fall"],
+
+        "weekday": ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],  # dataset: 0 = Sunday
+
+    }
+
+
+    _column = group_dropdown.value
+
+    _rentals_by_group = [
+
+        _group["cnt"].dropna().values
+
+        for _, _group in day_df.groupby(_column)   # groups come out sorted
+
+    ]
+
+
+    _fig, _ax = plt.subplots(figsize=(9.5, 4.8))
+
+    _ax.boxplot(
+
+        _rentals_by_group,
+
+        patch_artist=True,
+
+        boxprops=dict(facecolor=_LMU_GREEN, alpha=0.75, edgecolor=_DARK_GREY),
+
+        medianprops=dict(color="black", linewidth=2),
+
+        whiskerprops=dict(color=_DARK_GREY),
+
+        capprops=dict(color=_DARK_GREY),
+
+        flierprops=dict(marker="D", markersize=5, markerfacecolor=_DARK_GREY,
+
+                        markeredgecolor="white", alpha=0.8),
+
+    )
+
+
+    _ax.set_xticks(range(1, len(_rentals_by_group) + 1), labels=_LABELS[_column])
+
+    _ax.set_ylabel("Daily Total Bike Rentals")
+
+    _ax.set_title(
+
+        f"Rental Variability & Outliers {group_dropdown.selected_key.lower()}",
+
+        fontweight="bold", pad=12,
+
+    )
+
+    _ax.spines[["top", "right"]].set_visible(False)
+
+    _ax.grid(axis="y", linestyle="--", alpha=0.4)
+
+    plt.close(_fig)  # prevents the figure from rendering twice
+
+
+    mo.vstack([
+
+        mo.md("### Interactive Conditional Boxplots\n"
+
+              "Use the dropdown to compare how rentals vary across groups. "
+
+              "The dark diamonds are unusual days (beyond 1.5 × IQR from the box)."),
+
+        group_dropdown,
+
+        _fig,
+
+    ])
+    return
+
+
+@app.cell
+def _(day_df, group_dropdown, mo, plt):
+    # Same palette as the yearly boxplot
+    _BOX_FILL   = "#dbeafe"   # light blue
+    _BOX_EDGE   = "#4b78a8"   # steel blue
+    _WHISKER    = "#64748b"   # slate grey
+    _MEDIAN     = "#1f2937"   # near-black
+    _MEAN       = "#d95f02"   # orange
+    _OUTLIER    = "#94a3b8"   # light slate
 
     # Tick labels for each grouping option
     _LABELS = {
@@ -180,31 +296,36 @@ def _(day_df, group_dropdown, mo, plt):
     _fig, _ax = plt.subplots(figsize=(9.5, 4.8))
     _ax.boxplot(
         _rentals_by_group,
+        tick_labels=_LABELS[_column],
         patch_artist=True,
-        boxprops=dict(facecolor=_LMU_GREEN, alpha=0.75, edgecolor=_DARK_GREY),
-        medianprops=dict(color="black", linewidth=2),
-        whiskerprops=dict(color=_DARK_GREY),
-        capprops=dict(color=_DARK_GREY),
-        flierprops=dict(marker="D", markersize=5, markerfacecolor=_DARK_GREY,
-                        markeredgecolor="white", alpha=0.8),
+        showmeans=True,
+        boxprops=dict(facecolor=_BOX_FILL, edgecolor=_BOX_EDGE),
+        medianprops=dict(color=_MEDIAN, linewidth=2),
+        meanprops=dict(marker="D", markerfacecolor=_MEAN,
+                       markeredgecolor="white", markersize=7),
+        whiskerprops=dict(color=_WHISKER),
+        capprops=dict(color=_WHISKER),
+        flierprops=dict(marker="o", markerfacecolor=_OUTLIER,
+                        markeredgecolor="none", markersize=4, alpha=0.6),
     )
 
-    _ax.set_xticks(range(1, len(_rentals_by_group) + 1), labels=_LABELS[_column])
-    _ax.set_ylabel("Daily Total Bike Rentals")
+    _ax.set_ylabel("Daily Total Bike Rentals", fontsize=11, labelpad=10)
     _ax.set_title(
         f"Rental Variability & Outliers {group_dropdown.selected_key.lower()}",
         fontweight="bold", pad=12,
     )
     _ax.spines[["top", "right"]].set_visible(False)
-    _ax.grid(axis="y", linestyle="--", alpha=0.4)
+    _ax.set_axisbelow(True)   # grid lines sit behind the boxes
+    _ax.grid(color="gray", linestyle="--", linewidth=0.5)
     plt.close(_fig)  # prevents the figure from rendering twice
 
     mo.vstack([
         mo.md("### Interactive Conditional Boxplots\n"
               "Use the dropdown to compare how rentals vary across groups. "
-              "The dark diamonds are unusual days (beyond 1.5 × IQR from the box)."),
+              "The **orange diamond** is the mean, the **dark line** is the median, "
+              "and the **grey dots** are unusual days (beyond 1.5 × IQR from the box)."),
         group_dropdown,
-        _fig,
+        mo.center(_fig),
     ])
     return
 
