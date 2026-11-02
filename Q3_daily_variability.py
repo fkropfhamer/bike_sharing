@@ -9,7 +9,10 @@
 import marimo
 
 __generated_with = "0.25.2"
-app = marimo.App(width="medium")
+app = marimo.App(
+    width="medium",
+    layout_file="layouts/Q3_daily_variability.slides.json",
+)
 
 
 @app.cell
@@ -125,15 +128,17 @@ def _(day_df, mo, pd, plt, year_selector):
     )
 
     # Dates that don't exist (Feb 30, Apr 31...) show as light grey, not blank
-    cmap = plt.get_cmap("YlGnBu").copy()
-    cmap.set_bad("#eeeeee")
+    #cmap = plt.get_cmap("YlGnBu").copy() # four current options are YlGnBu, viridis, cividis,  RdBu, coolwarm
+    cmap = plt.get_cmap("cividis").copy()
+    cmap.set_bad("#eeeeee") # for black 000000
 
-    fig, ax = plt.subplots(figsize=(15, 5.5))
+    fig, ax = plt.subplots(figsize=(18, 6))
     image = ax.imshow(avg_rentals, cmap=cmap, aspect="auto")
 
     ax.set_xticks(range(31), labels=range(1, 32))
     ax.set_yticks(range(12), labels=MONTHS)
-    ax.set_title("Average Daily Rentals by Month and Day", fontweight="bold", pad=15)
+    ax.set_title("Average Daily Rentals by Month and Day", fontsize = 15, pad=15)
+    ax.tick_params(axis="both", labelsize=12)
     ax.spines[:].set_visible(False)
 
     # Thin white lines between cells give it a calendar look
@@ -142,7 +147,9 @@ def _(day_df, mo, pd, plt, year_selector):
     ax.grid(which="minor", color="white", linewidth=1)
     ax.tick_params(which="both", length=0)
 
-    fig.colorbar(image, ax=ax, pad=0.02, label="Average Daily Rentals")
+    cbar = fig.colorbar(image, ax=ax, pad=0.02)
+    cbar.set_label("Average Daily Rentals", fontsize = 12, labelpad = 15)
+    cbar.ax.tick_params(labelsize = 12)
     plt.close(fig)  # prevents the figure from rendering twice
 
     mo.vstack([
@@ -179,7 +186,8 @@ def _(mo):
 
 
 @app.cell(hide_code=True)
-def _(day_df, group_dropdown, mo, plt):
+def _():
+    """
     _LMU_GREEN = "#00883A"   # official LMU green
 
     _DARK_GREY = "#333333"
@@ -266,6 +274,7 @@ def _(day_df, group_dropdown, mo, plt):
         _fig,
 
     ])
+    """
     return
 
 
@@ -379,6 +388,15 @@ def _(day_df, group_dropdown, mo, plt):
         mo.center(_fig),
 
     ])
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    #Comment:
+    Day of the week was already plotted in question 1. Season and month plots both look nice, whereby the season one is more important. Try to find more trends here.
+    """)
     return
 
 
